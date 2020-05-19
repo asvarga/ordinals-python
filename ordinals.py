@@ -47,11 +47,28 @@ class Ordinal:
         if other.isZero(): return self
         ps, qs = self.parts, other.parts
         (y,d) = qs[0]
+        # TODO: binary search
         for (i, (x,c)) in enumerate(ps):
             cmp = x.comp(y)
             if cmp is EQ: return Ordinal(*(ps[:i]+[(x, c+d)]+qs[1:]))
             if cmp is LT: return Ordinal(*(ps[:i]+qs))
         return Ordinal(*(ps+qs))
+
+    def __sub__(self, other):
+        ps, qs = self.parts, other.parts
+        for (i, ((x,c), (y,d))) in enumerate(zip(ps, qs)):
+            cmp = x.comp(y)
+            if cmp is LT: return zero
+            if cmp is GT: return Ordinal(*ps[i:])
+            cmpi = compi(c, d)
+            if cmpi is LT: return zero
+            if cmpi is GT: return Ordinal(*([(x,c-d)]+ps[i+1:]))
+        return 
+
+        # if other.isZero() or self.isZero(): return self
+        # TODO
+
+    def __mul__(self, other): pass # TODO
 
     @staticmethod
     def zero(): return Ordinal()
