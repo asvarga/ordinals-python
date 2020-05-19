@@ -32,9 +32,9 @@ class Ordinal:
     def comp(self, other) -> int:
         for ((x,c), (y,d)) in zip(self.parts, other.parts):
             cmp = x.comp(y)
-            if cmp != EQ: return cmp
+            if cmp is not EQ: return cmp
             cmpi = compi(c, d)
-            if cmpi != EQ: return cmpi
+            if cmpi is not EQ: return cmpi
         return compi(len(self.parts), len(other.parts))
 
     def __eq__(self, other) -> bool: return self.parts == other.parts
@@ -44,17 +44,14 @@ class Ordinal:
     def __gt__(self, other) -> bool: return self.comp(other) == GT
 
     def __add__(self, other):
-        i, j, ret = 0, 0, []
-        while True:
-            if i >= len(self.parts): return Ordinal(*(ret+other.parts[j:]))
-            if j >= len(other.parts): return Ordinal(*(ret+self.parts[i:]))
-            ((x,c), (y,d)) = (self.parts[i], other.parts[j])
+        if other.isZero(): return self
+        ps, qs = self.parts, other.parts
+        (y,d) = qs[0]
+        for (i, (x,c)) in enumerate(ps):
             cmp = x.comp(y)
-            if cmp == EQ: return Ordinal(*(ret+[(x, c+d)]+other.parts[j+1:]))
-            elif cmp == LT: return Ordinal(*(ret+other.parts[j:]))
-            ret.append((x,c))
-            i += 1
-
+            if cmp is EQ: return Ordinal(*(ps[:i]+[(x, c+d)]+qs[1:]))
+            if cmp is LT: return Ordinal(*(ps[:i]+qs))
+        return Ordinal(*(ps+qs))
 
     @staticmethod
     def zero(): return Ordinal()
