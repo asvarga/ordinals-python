@@ -1,4 +1,5 @@
 #! /usr/local/bin/python3
+import math
 from typing import List, Tuple, Any, Optional, Union
 
 LT, EQ, GT = -1, 0, 1
@@ -77,7 +78,7 @@ def bp(x):
     (xa, xn, xb) = x
     return ("("+bp(xa)+")")*xn+bp(xb)
 
-def slog(x) -> float:
+def o2i(x) -> float:
     ps = bp(x)
     bit = 1.0
     ret = 0.0
@@ -85,6 +86,9 @@ def slog(x) -> float:
         bit /= 2
         if p == "(": ret += bit
     return ret
+
+def slog(x) -> float:
+    return -math.log2(1-o2i(x))
 
 def width(x) -> int:
     if x is zro: return 0
@@ -141,10 +145,13 @@ def normal(x) -> str:
 class Ord:
     def __init__(self, val): self.val = val
     def __str__(self): return s(self.val)
+    def __hash__(self): return hash(self.val)
     def __eq__(self, other): return self.val == a2o(other).val
     def comp(self, other): return comp(self.val, a2o(other).val)
     def __lt__(self, other): return self.comp(a2o(other)) is LT
     def __gt__(self, other): return self.comp(a2o(other)) is GT
+    def __le__(self, other): return self.comp(a2o(other)) is not GT
+    def __ge__(self, other): return self.comp(a2o(other)) is not LT
     def __add__(self, other): return Ord(add(self.val, a2o(other).val))
     def __sub__(self, other): return Ord(sub(self.val, a2o(other).val))
     def __mul__(self, other): return Ord(mul(self.val, a2o(other).val))
@@ -154,6 +161,8 @@ class Ord:
     def bp(self): return bp(self.val)
     @property
     def slog(self): return slog(self.val)
+    @property
+    def o2i(self): return o2i(self.val)
 
 def n2o(n: int) -> Ord: return Ord(fromInt(n))
 def a2o(a: Union[int, Ord]) -> Ord: return a if isinstance(a, Ord) else n2o(a)
@@ -164,6 +173,18 @@ w = Ord((n2o(1).val, 1, zro))
 ww = w**w
 www = w**ww
 wwww = w.tet(4)
+
+def getOrds(pred=None, size=20, lim=www):
+    """get all ords satisfying a predicate"""
+    pred = pred or (lambda x: len(x.bp) < size and x <= lim)
+    ords = {zero}
+    while True:
+        news = set(ords)
+        for x in ords: news.update({x+1, w**x})
+        news = set(x for x in news if pred(x))
+        if news == ords: break
+        ords = news
+    return sorted(ords)
 
 #### ####
 
@@ -188,22 +209,28 @@ if __name__ == "__main__":
 
     # print(zero.bp)
     # print(one.bp)
+    # print(two.bp)
     # print(three.bp)
+    # print(w.bp)
     # print(www.bp)
     #
     # print(zero.slog)
     # print(one.slog)
+    # print(two.slog)
     # print(three.slog)
+    # print(w.slog)
     # print(www.slog)
 
-    a = Ord((one.val, 1, one.val))
-    b = Ord((w.val, 1, one.val))
-    c = Ord((one.val, 1, zero.val))
-    d = Ord((one.val, 1, w.val))
-    print(f"normal({a}): {normal(a.val)}")
-    print(f"normal({b}): {normal(b.val)}")
-    print(f"normal({c}): {normal(c.val)}")
-    print(f"normal({d}): {normal(d.val)}")
+    # a = Ord((one.val, 1, one.val))
+    # b = Ord((w.val, 1, one.val))
+    # c = Ord((one.val, 1, zero.val))
+    # d = Ord((one.val, 1, w.val))
+    # print(f"normal({a}): {normal(a.val)}")
+    # print(f"normal({b}): {normal(b.val)}")
+    # print(f"normal({c}): {normal(c.val)}")
+    # print(f"normal({d}): {normal(d.val)}")
+
+    for x in getOrds(): print(x)
 
 
 

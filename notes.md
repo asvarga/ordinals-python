@@ -10,4 +10,5 @@
     - from
 - plot
 - efficiency
+    - hash-consing
     - actual bitstrings
