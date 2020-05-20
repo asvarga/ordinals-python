@@ -124,6 +124,16 @@ def s(x) -> str:
     if x is zro: return "0"
     return "+".join(pp(x,n) for (x,n) in parts(x))
 
+def normal(x) -> str:
+    if x is zro: return True
+    (xa, xn, xb) = x
+    if xn == 0: return False
+    if xa is zro: return xb is zro
+    if xb is zro: return normal(xa)
+    (xba, xbn, xbb) = xb
+    if xbn == 0: return False
+    return normal(xa) and normal(xba) and comp(xa, xba) is GT
+
 #### ####
 
 # TODO: memoize/hash-cons
@@ -176,15 +186,24 @@ if __name__ == "__main__":
     # print(www)
     # print(wwww)
 
-    print(zero.bp)
-    print(one.bp)
-    print(three.bp)
-    print(www.bp)
+    # print(zero.bp)
+    # print(one.bp)
+    # print(three.bp)
+    # print(www.bp)
+    #
+    # print(zero.slog)
+    # print(one.slog)
+    # print(three.slog)
+    # print(www.slog)
 
-    print(zero.slog)
-    print(one.slog)
-    print(three.slog)
-    print(www.slog)
+    a = Ord((one.val, 1, one.val))
+    b = Ord((w.val, 1, one.val))
+    c = Ord((one.val, 1, zero.val))
+    d = Ord((one.val, 1, w.val))
+    print(f"normal({a}): {normal(a.val)}")
+    print(f"normal({b}): {normal(b.val)}")
+    print(f"normal({c}): {normal(c.val)}")
+    print(f"normal({d}): {normal(d.val)}")
 
 
 
