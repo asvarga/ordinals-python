@@ -1,6 +1,6 @@
 #! /usr/local/bin/python3
 
-from ordinals2 import *
+from ordinals import *
 
 
 if __name__ == "__main__":

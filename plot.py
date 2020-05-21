@@ -1,7 +1,7 @@
 #! /usr/local/bin/python3
 
 import matplotlib.pyplot as plt
-from ordinals2 import *
+from ordinals import *
 
 #### ####
 
@@ -17,7 +17,7 @@ def init():
     # plt.grid(True)
 
 def plot():
-    ords = getOrds(size=14, lim=www)[1:] # size=12, lim=www
+    ords = getOrds(size=14, inf=one, sup=www) # size=12, lim=www
     xs = [x.slog for x in ords]
     ys = [x.nslog for x in ords]
 

@@ -1,121 +1,295 @@
 #! /usr/local/bin/python3
-from typing import List, Tuple, Any
+import math
+from typing import List, Tuple, Any, Optional, Union
 
 LT, EQ, GT = -1, 0, 1
 def compi(x, y): return EQ if x==y else (LT if x<y else GT)
 
 #### ####
 
-class Ordinal:
-    def __init__(self, *args):
-        # assert self == sum(w^x*c for (x,c) in self.parts)
-        self.parts: List[Tuple[Ordinal], int] = list(args)
+## (a, n, b) := w^a*n+b
+zro = None
+eps = [zro, 1, zro] # eps_0
+eps[0] = eps
+big = [zro, 1, zro] # eps_w?
+big[0] = big[2] = big
 
-    def toLists(self) -> List[Any]: return [(x.toLists(),c) for (x,c) in self.parts]
+def comp(x, y):
+    if x is zro: return EQ if y is zro else LT
+    if y is zro: return GT
+    (xa, xn, xb), (ya, yn, yb) = x, y
+    cmp = comp(xa, ya)
+    if cmp is not EQ: return cmp
+    cmpi = compi(xn, yn)
+    if cmpi is not EQ: return cmpi
+    return comp(xb, yb)
 
-    def __repr__(self) -> str: return str(self.toLists())
+def add(x, y):
+    if x is zro: return y
+    if y is zro: return x
+    (xa, xn, xb), (ya, yn, yb) = x, y
+    cmp = comp(xa, ya)
+    if cmp is LT: return y
+    if cmp is GT: return (xa, xn, add(xb, y))
+    return (xa, xn+yn, add(xb, yb))
 
-    @staticmethod
-    def pp(x,c) -> str:
-        """pretty print w^x*c"""
-        if x.isZero(): return str(c)
-        if x == one: return "w" if c==1 else f"w*{c}"
-        if x.parens(): return f"w^({x})" if c==1 else f"w^({x})*{c}"
-        return f"w^{x}" if c==1 else f"w^{x}*{c}"
+def sub(x, y):
+    """not sure if left or right subtraction"""
+    if x is zro: return zro
+    if y is zro: return x
+    (xa, xn, xb), (ya, yn, yb) = x, y
+    cmp = comp(xa, ya)
+    if cmp is LT: return zro
+    if cmp is GT: return x
+    cmpi = compi(xn, yn)
+    if cmpi is LT: return zro
+    if cmpi is GT: return (xa, xn-yn, xb)
+    return sub(xb, yb)
 
-    def parens(self) -> bool: return self.toInt() is None and self.width() > 1
+def mul(x, y):
+    if x is zro or y is zro: return zro
+    (xa, xn, xb), (ya, yn, yb) = x, y
+    if ya is zro: return (xa, xn*yn, xb)
+    if yb is zro: return (add(xa, ya), yn, zro)
+    return add(mul(x, (ya, yn, zro)), mul(x, yb))
 
-    def __str__(self): return "0" if self.isZero() else "+".join(Ordinal.pp(x,c) for (x,c) in self.parts)
+def exp(x, y):
+    # print(f"(x, y): {(s(x), s(y))}")
+    if y is zro: return one.val         # x^0 = 1
+    if x is zro: return zro             # 0^y = 0
+    if x is one.val: return one.val     # 1^y = 1
+    (xa, xn, xb), (ya, yn, yb) = x, y
+    if ya is zro:                       # x^n = x*...*x with fast exp
+        sqrt = exp(x, fromInt(yn//2))
+        ret = mul(sqrt, sqrt)
+        return mul(x, ret) if yn%2 else ret
+    if xa is zro and yn == 1 and yb is zro:         # n^(w^ya) = w^(w^(ya-1)), ex: 2^(w^4) = w^(w^3)
+        return ((sub(ya, one.val), 1, zro), 1, zro)
+    if xa is not zro:                               # (w^xa)^y = w^(xa*y), ex: (w^w)^3 = w^(w*3)
+        return (mul(xa, y), 1, zro)
+    if yb is zro:                                   # x^(ya*yn) = (x^ya)^yn
+        return exp(exp(x, (ya, 1, zro)), fromInt(yn))
+    return mul(exp(x, (ya, yn, zro)), exp(x, yb))   # x^(yan+yb) = x^yan * x^yb
 
-    def width(self) -> int: return sum(c for (x,c) in self.parts)
+def tet(x, n: int):
+    return one.val if n == 0 else exp(x, tet(x, n-1))
 
-    def comp(self, other) -> int:
-        for ((x,c), (y,d)) in zip(self.parts, other.parts):
-            cmp = x.comp(y)
-            if cmp is not EQ: return cmp
-            cmpi = compi(c, d)
-            if cmpi is not EQ: return cmpi
-        return compi(len(self.parts), len(other.parts))
+def log(x):
+    return x[0]
 
-    def __eq__(self, other) -> bool: return self.parts == other.parts
+def bp_naive(x):
+    if x is zro: return ""
+    (xa, xn, xb) = x
+    return ("(" + bp_naive(xa) + ")") * xn + bp_naive(xb)
 
-    def __lt__(self, other) -> bool: return self.comp(other) == LT
+def omin(x, y):
+    return x if comp(x, y) is LT else y
 
-    def __gt__(self, other) -> bool: return self.comp(other) == GT
+def bp(x):
+    def bp(x, bound):
+        """(ord, bound) -> (bp-string, forced)"""
+        if x is zro: return ""
+        if bound is zro: raise Exception("abnormal ordinal")
+        (xa, xn, xb) = x
+        (ba, bn, bb) = bound
+        if xn == 1:
+            bpa = bp(xa, ba)
+            fa = xa == ba
+            bpb = bp(xb, x)
+            return "(" + bpa + ("" if fa else ")") + bpb
+        bpa = bp(xa, ba)
+        fa = xa == ba
+        bpa2 = bp(xa, xa)
+        bpb = bp(xb, x)
+        return "(" + bpa + ("" if fa else ")") + ("(" + bpa2) * (xn-1) + bpb
+    return bp(x, big)
 
-    def __add__(self, other):
-        if other.isZero(): return self
-        ps, qs = self.parts, other.parts
-        (y,d) = qs[0]
-        # TODO: binary search
-        for (i, (x,c)) in enumerate(ps):
-            cmp = x.comp(y)
-            if cmp is EQ: return Ordinal(*(ps[:i]+[(x, c+d)]+qs[1:]))
-            if cmp is LT: return Ordinal(*(ps[:i]+qs))
-        return Ordinal(*(ps+qs))
+def o2i(x, f=bp, r=0.618) -> float:
+    ps = f(x)
+    bit = 1-r
+    ret = 0.0
+    for p in ps:
+        if p == "(": ret += bit
+        bit *= r if p == "(" else 1-r
+    return ret
 
-    def __sub__(self, other):
-        ps, qs = self.parts, other.parts
-        for (i, ((x,c), (y,d))) in enumerate(zip(ps, qs)):
-            cmp = x.comp(y)
-            if cmp is LT: return zero
-            if cmp is GT: return Ordinal(*ps[i:])
-            cmpi = compi(c, d)
-            if cmpi is LT: return zero
-            if cmpi is GT: return Ordinal(*([(x,c-d)]+ps[i+1:]))
-        return 
+def slog(x, f=bp, r=0.618) -> float:
+    return math.log(1-o2i(x, f=f, r=r), r)-1
 
-        # if other.isZero() or self.isZero(): return self
-        # TODO
+def width(x) -> int:
+    if x is zro: return 0
+    (xa, xn, xb) = x
+    return xn+width(xb)
 
-    def __mul__(self, other): pass # TODO
+def fromInt(n: int):
+    return (zro, n, zro) if n else zro
 
-    @staticmethod
-    def zero(): return Ordinal()
+def isInt(x) -> bool:
+    return x is zro or x[0] is zro
 
-    def isZero(self) -> bool: return not self.parts
+def toInt(x) -> Optional[int]:
+    if x is zro: return 0
+    (xa, xn, xb) = x
+    return xn
 
-    @staticmethod
-    def fromInt(i: int): return Ordinal((zero, i)) if i else zero
+def parens(x) -> bool:
+    return not isInt(x) and width(x) > 1
 
-    def toInt(self) -> int:
-        if self.isZero(): return 0
-        if len(self.parts) == 1 and self.parts[0][0].isZero(): return self.parts[0][1]
+def pp(x, n: int) -> str:
+    """pretty print w^x*n"""
+    if x is zro: return str(n)
+    if x == one.val: return "ω" if n==1 else f"ω*{n}"
+    if parens(x): return f"ω^({s(x)})" if n==1 else f"ω^({s(x)})*{n}"
+    return f"ω^{s(x)}" if n==1 else f"ω^{s(x)}*{n}"
 
-def Ord(*args): return Ordinal(*args)
-def n2o(i): return Ordinal.fromInt(i)
-zero = Ordinal()
-one = n2o(1)
-two = n2o(2)
-three = n2o(3)
-w = Ord((one,1))
+def parts(x) -> List[Tuple[Any, int]]:
+    ret = []
+    while x is not zro:
+        (xa, xn, xb) = x
+        ret.append((xa, xn))
+        x = xb
+    return ret
 
+def s(x) -> str:
+    if x is zro: return "0"
+    return "+".join(pp(x,n) for (x,n) in parts(x))
+
+def normal(x) -> str:
+    if x is zro: return True
+    (xa, xn, xb) = x
+    if xn == 0: return False
+    if xa is zro: return xb is zro
+    if xb is zro: return normal(xa)
+    (xba, xbn, xbb) = xb
+    if xbn == 0: return False
+    return normal(xa) and normal(xba) and comp(xa, xba) is GT
+
+#### ####
+
+# TODO: memoize/hash-cons
+
+class Ord:
+    def __init__(self, val): self.val = val
+    def __str__(self): return s(self.val)
+    def __hash__(self): return hash(self.val)
+    def __eq__(self, other): return self.val == a2o(other).val
+    def comp(self, other): return comp(self.val, a2o(other).val)
+    def __lt__(self, other): return self.comp(a2o(other)) is LT
+    def __gt__(self, other): return self.comp(a2o(other)) is GT
+    def __le__(self, other): return self.comp(a2o(other)) is not GT
+    def __ge__(self, other): return self.comp(a2o(other)) is not LT
+    def __add__(self, other): return Ord(add(self.val, a2o(other).val))
+    def __sub__(self, other): return Ord(sub(self.val, a2o(other).val))
+    def __mul__(self, other): return Ord(mul(self.val, a2o(other).val))
+    def __pow__(self, other): return Ord(exp(self.val, a2o(other).val))
+    def tet(self, n): return Ord(tet(self.val, a2n(n)))
+    @property
+    def bp(self): return bp(self.val)
+    @property
+    def slog(self): return slog(self.val, bp)
+    @property
+    def nslog(self): return slog(self.val, bp_naive)
+    @property
+    def o2i(self): return o2i(self.val)
+    @property
+    def no2i(self): return o2i(self.val, bp_naive)
+
+def n2o(n: int) -> Ord: return Ord(fromInt(n))
+def a2o(a: Union[int, Ord]) -> Ord: return a if isinstance(a, Ord) else n2o(a)
+def o2n(x: Ord) -> int: return toInt(x.val)
+def a2n(a: Union[int, Ord]) -> int: return o2n if isinstance(a, Ord) else a
+zero, one, two, three = map(n2o, range(4))
+w = Ord((n2o(1).val, 1, zro))
+ww = w**w
+www = w**ww
+wwww = w.tet(4)
+
+def getOrds(pred=None, size=10, inf=zero, sup=www):
+    """get all ords satisfying a predicate"""
+    pred = pred or (lambda x: len(x.bp) <= size and inf <= x <= sup)
+    ords = {inf}
+    while True:
+        news = set(ords)
+        for x in ords:
+            news.update({x+1, w**x})
+            for y in ords: news.update({x+y, x*y})
+        news = set(x for x in news if pred(x))
+        if news == ords: break
+        ords = news
+    return sorted(ords)
+
+#### ####
 
 if __name__ == "__main__":
-    a = Ord((one, 2), (zero, 1))
-    b = Ord((two, 1))
-    c = Ord((b, 1), (two, 1))
+
+    # print(w+1)
+    # print(one+w)
+    # print(w+w)
+    # print(w*w)
+    # print(three*w)
+    # print(w*3)
+    # print(ww)
+    # print(www)
+    # print(w**3)
+    # print(w**w)
+    # print(w**w**w)
+    # print(w**3**2)
+    # print((w+1)**(w+1))
+    # print(ww)
+    # print(www)
+    # print(wwww)
+
+    # print(zero.bp)
+    # print(one.bp)
+    # print(two.bp)
+    # print(three.bp)
+    # print(w.bp)
+    # print((w+1).bp)
+    # print((w*3+3).bp)
+    # print((w*4).bp)
+    # print(www.bp)
+    #
+    # print(zero.slog)
+    # print(one.slog)
+    # print(two.slog)
+    # print(three.slog)
+    # print(w.slog)
+    # print(www.slog)
+
+    # a = Ord((one.val, 1, one.val))
+    # b = Ord((w.val, 1, one.val))
+    # c = Ord((one.val, 1, zero.val))
+    # d = Ord((one.val, 1, w.val))
+    # print(f"normal({a}): {normal(a.val)}")
+    # print(f"normal({b}): {normal(b.val)}")
+    # print(f"normal({c}): {normal(c.val)}")
+    # print(f"normal({d}): {normal(d.val)}")
+
+    # a = w*3
+    # a = (w*2)+w
     # print(a)
-    # print(w)
-    # print(b)
-    # print(c)
-
-    assert a < b
-    assert b < c
-
-    print(f"{a} + {b} = {a + b}") # assert a + b == w^2
-    print(f"{b} + {a} = {b + a}") # assert b + a == w^2+w*2+1
-    print(f"{a} + {c} = {a + c}") # assert a + c == w^w^2+w^2
-    print(f"{c} + {a} = {c + a}") # assert c + a == w^w^2+w^2+w*2+1
-    print(f"{b} + {c} = {b + c}") # assert b + c == w^w^2+w^2
-    print(f"{c} + {b} = {c + b}") # assert c + b == w^w^2+w^2*2
+    # print(a.bp)
+    # print(len(a.bp))
+    ords = getOrds(size=10, inf=one, sup=wwww)
+    for x in ords:
+        print(f"{x} {' '*(10-len(str(x)))} : {x.bp}  {' '*(10-len(x.bp))} : {x.slog}")
+        # print(f"{x} {' '*(10-len(str(x)))} : {x.bp}  {' '*(10-len(x.bp))} : {x.o2i}")
 
 
-    assert three == three
-    assert three != one
-    assert n2o(5) == n2o(5)
-    assert three.toInt() == 3
-    assert one != w
-    assert one < three
-    assert w > three
+    # a = www + w**(w+3)
+    # a = www + ww
+    # a = ww + w
+    # a = w**3 + w**2
+    # a =  w**w**2 + w**(w+2)
+    # print(a)
+    # print(a.val)
+    # print(a.bp)
+
+
+
+
+
+
+
+
 
