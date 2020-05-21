@@ -1,3 +1,4 @@
+#! /usr/local/bin/python3
 
 from ordinals2 import *
 
@@ -84,3 +85,7 @@ if __name__ == "__main__":
     assert (w*w+2)**w == w**(w)
     assert w*(w**2) == w**3
     assert zero**1 == 0
+
+
+    ords = getOrds()
+    for i in range(len(ords)-1): assert ords[i].slog < ords[i+1].slog # test sorted

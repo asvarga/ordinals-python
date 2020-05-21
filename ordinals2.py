@@ -87,20 +87,21 @@ def omin(x, y):
 
 def bp(x):
     # print(f"x: {x}")
-    print(f"x: {Ord(x)}")
+    # print(f"x: {Ord(x)}")
     # TODO: descending down xa with bounds ba could also accept bb and return min(xa, bb)?
     def bp(x, bound):
         """(ord, bound) -> (bp-string, forced)"""
+        # FIXME: don't return forced. forced iff x == bound
         # print(f"x: {Ord(x)}")
         # print(f"b: {'big' if bound is big else Ord(bound)}")
         # print()
-        if x is zro: return ("", bound is zro)
+        if x is zro: return ""
         if bound is zro: raise Exception("abnormal ordinal")
         (xa, xn, xb) = x
         (ba, bn, bb) = bound
         if xn == 1:
-            bpa, fa = bp(xa, ba)
-            fa = fa and bn != 1
+            # bpa, fa = bp(xa, ba)
+            # fa = fa and bn != 1
             # print(f"bpa: {bpa}")
             # print(f"fa: {fa}")
             # print(f"bb: {bb}")
@@ -113,22 +114,34 @@ def bp(x):
             # print(f"x: {Ord(x)}")
             # print(f"bn: {bn}")
             # print(f"bb if fa else x: {Ord(bb if fa else x)}")
-            bpb, fb = bp(xb, bb if fa else x)
+            # bpb, fb = bp(xb, bb if fa else x)
 
             # print(f"bpb: {bpb}")
             # print(f"fb: {fb}")
             # print(f"bb: {bb}")
             # print(f"xa: {xa}")
-            return "(" + bpa + ("" if fa else ")") + bpb, fb #and fa
-        # FIXME: must use bn?
-        bpa, fa = bp(xa, ba)
-        bpa2, fa2 = bp(xa, xa)
-        # bpb, fb = bp(xb, omin(x, bb))
-        bpb, fb = bp(xb, bb if fa else x)
-        return "(" + bpa + ("" if fa else ")") + ("(" + bpa2)*(xn-1) + bpb, fb
-    ret, _ = bp(x, big)
-    return ret
 
+
+            bpa = bp(xa, ba)
+            fa = xa == ba
+            bpb = bp(xb, x)
+            return "(" + bpa + ("" if fa else ")") + bpb
+        # FIXME: must use bn?
+        bpa = bp(xa, ba)
+        fa = xa == ba
+        bpa2 = bp(xa, xa)
+        # fa2 = True  # TODO
+        bpb = bp(xb, x)
+        return "(" + bpa + ("" if fa else ")") + ("(" + bpa2) * (xn-1) + bpb
+
+        # bpa, fa = bp(xa, ba)
+        # bpa2, fa2 = bp(xa, xa)
+        # # bpb, fb = bp(xb, omin(x, bb))
+        # bpb, fb = bp(xb, bb if fa else x)
+        # return "(" + bpa + ("" if fa else ")") + ("(" + bpa2)*(xn-1) + bpb, fb
+    # ret, _ = bp(x, big)
+    # return ret
+    return bp(x, big)
 
 def o2i(x, f=bp) -> float:
     ps = f(x)
@@ -268,6 +281,7 @@ if __name__ == "__main__":
     # print(two.bp)
     # print(three.bp)
     # print(w.bp)
+    # print((w+1).bp)
     # print((w*3+3).bp)
     # print((w*4).bp)
     # print(www.bp)
@@ -293,7 +307,9 @@ if __name__ == "__main__":
     # print(a)
     # print(a.bp)
     # print(len(a.bp))
-    for x in getOrds(): print(x)
+    ords = getOrds()
+    for x in ords: print(f"{x} {' '*(10-len(str(x)))}: {x.bp}")
+    for i in range(len(ords)-1): assert ords[i].slog < ords[i+1].slog # test sorted
 
     # a = www + w**(w+3)
     # a = www + ww

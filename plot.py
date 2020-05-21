@@ -12,11 +12,12 @@ POINTSIZE = 1
 
 def init():
     plt.axes().set_aspect('equal')#, 'datalim')
+    plt.gcf().set_size_inches(10, 10)
     # plt.title('title')
     # plt.grid(True)
 
 def plot():
-    ords = getOrds() # size=12, lim=www
+    ords = getOrds(size=11, lim=www) # size=12, lim=www
     xs = [x.slog for x in ords]
     ys = [x.nslog for x in ords]
 
