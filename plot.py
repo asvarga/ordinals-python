@@ -3,27 +3,38 @@
 import matplotlib.pyplot as plt
 from ordinals2 import *
 
+#### ####
+
+FONTSIZE = 6
+POINTSIZE = 1
+
+#### ####
+
 def init():
     plt.axes().set_aspect('equal')#, 'datalim')
+    # plt.title('title')
+    # plt.grid(True)
 
 def plot():
-    ords = getOrds(size=12, lim=www)
-    ticks = [o.slog for o in ords]
-    labels = [str(o) for o in ords]
-    plt.xticks(ticks=ticks, labels="")#labels, rotation=270)
-    plt.yticks(ticks=ticks, labels=labels)
-
+    ords = getOrds() # size=12, lim=www
     xs = [x.slog for x in ords]
-    ys = [x.slog for x in ords]
-    plt.scatter(xs, ys, 1)
+    ys = [x.nslog for x in ords]
 
-    # plt.xlabel('time (s)')
-    # plt.ylabel('voltage (mV)')
-    # plt.title('About as simple as it gets, folks')
-    # plt.grid(True)    # cool
-    plt.savefig("out.png")
+    labels = [str(o) for o in ords]
+    plt.xticks(ticks=xs,
+               labels=labels,
+               fontsize=FONTSIZE, rotation=270)
+    plt.yticks(ticks=ys,
+               labels=labels,
+               fontsize=FONTSIZE)
+
+    # plt.xlabel('xlabel')
+    # plt.ylabel('ylabel')
+    plt.scatter(xs, ys, s=POINTSIZE)
+    plt.savefig("fig.png")
     plt.show()
 
+#### ####
 
 if __name__ == "__main__":
     init()

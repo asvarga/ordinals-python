@@ -9,6 +9,10 @@ def compi(x, y): return EQ if x==y else (LT if x<y else GT)
 
 ## (a, n, b) := w^a*n+b
 zro = None
+eps = [zro, 1, zro] # eps_0
+eps[0] = eps
+big = [zro, 1, zro] # eps_w?
+big[0] = big[2] = big
 
 def comp(x, y):
     if x is zro: return EQ if y is zro else LT
@@ -73,13 +77,61 @@ def tet(x, n: int):
 def log(x):
     return x[0]
 
-def bp(x):
+def bp_naive(x):
     if x is zro: return ""
     (xa, xn, xb) = x
-    return ("("+bp(xa)+")")*xn+bp(xb)
+    return ("(" + bp_naive(xa) + ")") * xn + bp_naive(xb)
 
-def o2i(x) -> float:
-    ps = bp(x)
+def omin(x, y):
+    return x if comp(x, y) is LT else y
+
+def bp(x):
+    # print(f"x: {x}")
+    print(f"x: {Ord(x)}")
+    # TODO: descending down xa with bounds ba could also accept bb and return min(xa, bb)?
+    def bp(x, bound):
+        """(ord, bound) -> (bp-string, forced)"""
+        # print(f"x: {Ord(x)}")
+        # print(f"b: {'big' if bound is big else Ord(bound)}")
+        # print()
+        if x is zro: return ("", bound is zro)
+        if bound is zro: raise Exception("abnormal ordinal")
+        (xa, xn, xb) = x
+        (ba, bn, bb) = bound
+        if xn == 1:
+            bpa, fa = bp(xa, ba)
+            fa = fa and bn != 1
+            # print(f"bpa: {bpa}")
+            # print(f"fa: {fa}")
+            # print(f"bb: {bb}")
+            # print(f"xa: {x}")
+            # print(f"omin(xa, bb): {omin(x, bb)}")
+
+            # bpb, fb = bp(xb, omin(x, bb)) #exp(w.val, xa) #(xa,1,zro)
+            # print(f"bb: {'big' if bb is big else Ord(bb)}")
+            # print(f"fa: {fa}")
+            # print(f"x: {Ord(x)}")
+            # print(f"bn: {bn}")
+            # print(f"bb if fa else x: {Ord(bb if fa else x)}")
+            bpb, fb = bp(xb, bb if fa else x)
+
+            # print(f"bpb: {bpb}")
+            # print(f"fb: {fb}")
+            # print(f"bb: {bb}")
+            # print(f"xa: {xa}")
+            return "(" + bpa + ("" if fa else ")") + bpb, fb #and fa
+        # FIXME: must use bn?
+        bpa, fa = bp(xa, ba)
+        bpa2, fa2 = bp(xa, xa)
+        # bpb, fb = bp(xb, omin(x, bb))
+        bpb, fb = bp(xb, bb if fa else x)
+        return "(" + bpa + ("" if fa else ")") + ("(" + bpa2)*(xn-1) + bpb, fb
+    ret, _ = bp(x, big)
+    return ret
+
+
+def o2i(x, f=bp) -> float:
+    ps = f(x)
     bit = 1.0
     ret = 0.0
     for p in ps:
@@ -87,8 +139,8 @@ def o2i(x) -> float:
         if p == "(": ret += bit
     return ret
 
-def slog(x) -> float:
-    return -math.log2(1-o2i(x))
+def slog(x, *args) -> float:
+    return -math.log2(1-o2i(x, *args))
 
 def width(x) -> int:
     if x is zro: return 0
@@ -160,9 +212,11 @@ class Ord:
     @property
     def bp(self): return bp(self.val)
     @property
-    def slog(self): return slog(self.val)
+    def slog(self): return slog(self.val, bp)
     @property
-    def o2i(self): return o2i(self.val)
+    def nslog(self): return slog(self.val, bp_naive)
+    @property
+    def o2i(self, *args): return o2i(self.val, *args)
 
 def n2o(n: int) -> Ord: return Ord(fromInt(n))
 def a2o(a: Union[int, Ord]) -> Ord: return a if isinstance(a, Ord) else n2o(a)
@@ -174,13 +228,15 @@ ww = w**w
 www = w**ww
 wwww = w.tet(4)
 
-def getOrds(pred=None, size=20, lim=www):
+def getOrds(pred=None, size=10, lim=www):
     """get all ords satisfying a predicate"""
-    pred = pred or (lambda x: len(x.bp) < size and x <= lim)
+    pred = pred or (lambda x: len(x.bp) <= size and x <= lim)
     ords = {zero}
     while True:
         news = set(ords)
-        for x in ords: news.update({x+1, w**x})
+        for x in ords:
+            news.update({x+1, w**x})
+            for y in ords: news.update({x+y, x*y})
         news = set(x for x in news if pred(x))
         if news == ords: break
         ords = news
@@ -212,6 +268,8 @@ if __name__ == "__main__":
     # print(two.bp)
     # print(three.bp)
     # print(w.bp)
+    # print((w*3+3).bp)
+    # print((w*4).bp)
     # print(www.bp)
     #
     # print(zero.slog)
@@ -230,7 +288,22 @@ if __name__ == "__main__":
     # print(f"normal({c}): {normal(c.val)}")
     # print(f"normal({d}): {normal(d.val)}")
 
+    # a = w*3
+    # a = (w*2)+w
+    # print(a)
+    # print(a.bp)
+    # print(len(a.bp))
     for x in getOrds(): print(x)
+
+    # a = www + w**(w+3)
+    # a = www + ww
+    # a = ww + w
+    # a = w**3 + w**2
+    # a =  w**w**2 + w**(w+2)
+    # print(a)
+    # print(a.val)
+    # print(a.bp)
+
 
 
 

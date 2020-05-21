@@ -143,4 +143,4 @@ cython_debug/
 ####
 
 /venv-pypy
-out.png
+fig.png

@@ -2,13 +2,11 @@
 
 ## TODO
 
-- naive bp
-    - to
-    - from
+- fix pycharm stuff
+
 - smart bp
-    - to
-    - from
 - plot
 - efficiency
     - hash-consing
+    - memoize properties
     - actual bitstrings
