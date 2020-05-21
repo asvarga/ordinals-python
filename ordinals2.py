@@ -86,74 +86,35 @@ def omin(x, y):
     return x if comp(x, y) is LT else y
 
 def bp(x):
-    # print(f"x: {x}")
-    # print(f"x: {Ord(x)}")
-    # TODO: descending down xa with bounds ba could also accept bb and return min(xa, bb)?
     def bp(x, bound):
         """(ord, bound) -> (bp-string, forced)"""
-        # FIXME: don't return forced. forced iff x == bound
-        # print(f"x: {Ord(x)}")
-        # print(f"b: {'big' if bound is big else Ord(bound)}")
-        # print()
         if x is zro: return ""
         if bound is zro: raise Exception("abnormal ordinal")
         (xa, xn, xb) = x
         (ba, bn, bb) = bound
         if xn == 1:
-            # bpa, fa = bp(xa, ba)
-            # fa = fa and bn != 1
-            # print(f"bpa: {bpa}")
-            # print(f"fa: {fa}")
-            # print(f"bb: {bb}")
-            # print(f"xa: {x}")
-            # print(f"omin(xa, bb): {omin(x, bb)}")
-
-            # bpb, fb = bp(xb, omin(x, bb)) #exp(w.val, xa) #(xa,1,zro)
-            # print(f"bb: {'big' if bb is big else Ord(bb)}")
-            # print(f"fa: {fa}")
-            # print(f"x: {Ord(x)}")
-            # print(f"bn: {bn}")
-            # print(f"bb if fa else x: {Ord(bb if fa else x)}")
-            # bpb, fb = bp(xb, bb if fa else x)
-
-            # print(f"bpb: {bpb}")
-            # print(f"fb: {fb}")
-            # print(f"bb: {bb}")
-            # print(f"xa: {xa}")
-
-
             bpa = bp(xa, ba)
             fa = xa == ba
             bpb = bp(xb, x)
             return "(" + bpa + ("" if fa else ")") + bpb
-        # FIXME: must use bn?
         bpa = bp(xa, ba)
         fa = xa == ba
         bpa2 = bp(xa, xa)
-        # fa2 = True  # TODO
         bpb = bp(xb, x)
         return "(" + bpa + ("" if fa else ")") + ("(" + bpa2) * (xn-1) + bpb
-
-        # bpa, fa = bp(xa, ba)
-        # bpa2, fa2 = bp(xa, xa)
-        # # bpb, fb = bp(xb, omin(x, bb))
-        # bpb, fb = bp(xb, bb if fa else x)
-        # return "(" + bpa + ("" if fa else ")") + ("(" + bpa2)*(xn-1) + bpb, fb
-    # ret, _ = bp(x, big)
-    # return ret
     return bp(x, big)
 
-def o2i(x, f=bp) -> float:
+def o2i(x, f=bp, r=0.618) -> float:
     ps = f(x)
-    bit = 1.0
+    bit = 1-r
     ret = 0.0
     for p in ps:
-        bit /= 2
         if p == "(": ret += bit
+        bit *= r if p == "(" else 1-r
     return ret
 
-def slog(x, *args) -> float:
-    return -math.log2(1-o2i(x, *args))
+def slog(x, f=bp, r=0.618) -> float:
+    return math.log(1-o2i(x, f=f, r=r), r)-1
 
 def width(x) -> int:
     if x is zro: return 0
@@ -177,9 +138,9 @@ def parens(x) -> bool:
 def pp(x, n: int) -> str:
     """pretty print w^x*n"""
     if x is zro: return str(n)
-    if x == one.val: return "w" if n==1 else f"w*{n}"
-    if parens(x): return f"w^({s(x)})" if n==1 else f"w^({s(x)})*{n}"
-    return f"w^{s(x)}" if n==1 else f"w^{s(x)}*{n}"
+    if x == one.val: return "ω" if n==1 else f"ω*{n}"
+    if parens(x): return f"ω^({s(x)})" if n==1 else f"ω^({s(x)})*{n}"
+    return f"ω^{s(x)}" if n==1 else f"ω^{s(x)}*{n}"
 
 def parts(x) -> List[Tuple[Any, int]]:
     ret = []
@@ -229,7 +190,9 @@ class Ord:
     @property
     def nslog(self): return slog(self.val, bp_naive)
     @property
-    def o2i(self, *args): return o2i(self.val, *args)
+    def o2i(self): return o2i(self.val)
+    @property
+    def no2i(self): return o2i(self.val, bp_naive)
 
 def n2o(n: int) -> Ord: return Ord(fromInt(n))
 def a2o(a: Union[int, Ord]) -> Ord: return a if isinstance(a, Ord) else n2o(a)
@@ -307,9 +270,11 @@ if __name__ == "__main__":
     # print(a)
     # print(a.bp)
     # print(len(a.bp))
-    ords = getOrds()
-    for x in ords: print(f"{x} {' '*(10-len(str(x)))}: {x.bp}")
-    for i in range(len(ords)-1): assert ords[i].slog < ords[i+1].slog # test sorted
+    ords = getOrds(size=10, lim=wwww)
+    for x in ords:
+        print(f"{x} {' '*(10-len(str(x)))} : {x.bp}  {' '*(10-len(x.bp))} : {x.slog}")
+        # print(f"{x} {' '*(10-len(str(x)))} : {x.bp}  {' '*(10-len(x.bp))} : {x.o2i}")
+
 
     # a = www + w**(w+3)
     # a = www + ww

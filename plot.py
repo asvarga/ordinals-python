@@ -17,7 +17,7 @@ def init():
     # plt.grid(True)
 
 def plot():
-    ords = getOrds(size=11, lim=www) # size=12, lim=www
+    ords = getOrds(size=14, lim=www)[1:] # size=12, lim=www
     xs = [x.slog for x in ords]
     ys = [x.nslog for x in ords]
 
