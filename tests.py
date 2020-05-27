@@ -88,4 +88,4 @@ if __name__ == "__main__":
 
 
     ords = getOrds()
-    for i in range(len(ords)-1): assert ords[i].slog < ords[i+1].slog # test sorted
+    for i in range(len(ords)-1): assert ords[i].slog() < ords[i+1].slog() # test sorted
