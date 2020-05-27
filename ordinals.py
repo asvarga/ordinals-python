@@ -11,8 +11,6 @@ def compi(x, y): return EQ if x==y else (LT if x<y else GT)
 zro = None
 eps = [zro, 1, zro] # eps_0
 eps[0] = eps
-big = [zro, 1, zro] # eps_w?
-big[0] = big[2] = big
 
 def comp(x, y):
     if x is zro: return EQ if y is zro else LT
@@ -58,6 +56,7 @@ def exp(x, y):
     if y is zro: return one.val         # x^0 = 1
     if x is zro: return zro             # 0^y = 0
     if x is one.val: return one.val     # 1^y = 1
+    if x is w.val: return (y, 1, zro)
     (xa, xn, xb), (ya, yn, yb) = x, y
     if ya is zro:                       # x^n = x*...*x with fast exp
         sqrt = exp(x, fromInt(yn//2))
@@ -91,18 +90,13 @@ def bp(x):
         if x is zro: return ""
         if bound is zro: raise Exception("abnormal ordinal")
         (xa, xn, xb) = x
-        (ba, bn, bb) = bound
+        (ba, _, _) = bound
         if xn == 1:
-            bpa = bp(xa, ba)
-            fa = xa == ba
-            bpb = bp(xb, x)
-            return "(" + bpa + ("" if fa else ")") + bpb
-        bpa = bp(xa, ba)
-        fa = xa == ba
-        bpa2 = bp(xa, xa)
-        bpb = bp(xb, x)
-        return "(" + bpa + ("" if fa else ")") + ("(" + bpa2) * (xn-1) + bpb
-    return bp(x, big)
+            if xa == ba: return "(" + bp(xa, xa) + bp(xb, (xa, 1, zro))
+            return "(" + bp(xa, ba) + ")" + bp(xb, (xa, 1, zro))
+        if xa == ba: return ("(" + bp(xa, xa)) * xn + bp(xb, (xa, 1, zro))
+        return "(" + bp(xa, ba) + ")" + ("(" + bp(xa, xa)) * (xn-1) + bp(xb, (xa, 1, zro))
+    return bp(x, eps)
 
 def o2i(x, f=bp, r=0.618) -> float:
     ps = f(x)
@@ -185,10 +179,8 @@ class Ord:
     def tet(self, n): return Ord(tet(self.val, a2n(n)))
     @property
     def bp(self): return bp(self.val)
-    @property
-    def slog(self): return slog(self.val, bp)
-    @property
-    def nslog(self): return slog(self.val, bp_naive)
+    def slog(self, r=0.618): return slog(self.val, bp, r=r)
+    def nslog(self, r=0.618): return slog(self.val, bp_naive, r=r)
     @property
     def o2i(self): return o2i(self.val)
     @property
@@ -221,70 +213,9 @@ def getOrds(pred=None, size=10, inf=zero, sup=www):
 #### ####
 
 if __name__ == "__main__":
-
-    # print(w+1)
-    # print(one+w)
-    # print(w+w)
-    # print(w*w)
-    # print(three*w)
-    # print(w*3)
-    # print(ww)
-    # print(www)
-    # print(w**3)
-    # print(w**w)
-    # print(w**w**w)
-    # print(w**3**2)
-    # print((w+1)**(w+1))
-    # print(ww)
-    # print(www)
-    # print(wwww)
-
-    # print(zero.bp)
-    # print(one.bp)
-    # print(two.bp)
-    # print(three.bp)
-    # print(w.bp)
-    # print((w+1).bp)
-    # print((w*3+3).bp)
-    # print((w*4).bp)
-    # print(www.bp)
-    #
-    # print(zero.slog)
-    # print(one.slog)
-    # print(two.slog)
-    # print(three.slog)
-    # print(w.slog)
-    # print(www.slog)
-
-    # a = Ord((one.val, 1, one.val))
-    # b = Ord((w.val, 1, one.val))
-    # c = Ord((one.val, 1, zero.val))
-    # d = Ord((one.val, 1, w.val))
-    # print(f"normal({a}): {normal(a.val)}")
-    # print(f"normal({b}): {normal(b.val)}")
-    # print(f"normal({c}): {normal(c.val)}")
-    # print(f"normal({d}): {normal(d.val)}")
-
-    # a = w*3
-    # a = (w*2)+w
-    # print(a)
-    # print(a.bp)
-    # print(len(a.bp))
     ords = getOrds(size=10, inf=one, sup=wwww)
     for x in ords:
-        print(f"{x} {' '*(10-len(str(x)))} : {x.bp}  {' '*(10-len(x.bp))} : {x.slog}")
-        # print(f"{x} {' '*(10-len(str(x)))} : {x.bp}  {' '*(10-len(x.bp))} : {x.o2i}")
-
-
-    # a = www + w**(w+3)
-    # a = www + ww
-    # a = ww + w
-    # a = w**3 + w**2
-    # a =  w**w**2 + w**(w+2)
-    # print(a)
-    # print(a.val)
-    # print(a.bp)
-
+        print(f"{x} {' '*(10-len(str(x)))} : {x.bp}  {' '*(10-len(x.bp))} : {x.slog()}")
 
 
 

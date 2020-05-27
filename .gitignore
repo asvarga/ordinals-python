@@ -144,3 +144,10 @@ cython_debug/
 
 /venv-pypy
 fig.png
+.idea/.gitignore
+.idea/Ordinals.iml
+.idea/inspectionProfiles/
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+local/
